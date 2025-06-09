@@ -1,92 +1,68 @@
-import React, { useState } from "react";
-import ReactPlayer from "react-player";
+import React from "react";
 
-const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
-
-const MovieList = ({
-  movies,
-  onAddToWatchlist,
-  onRemoveFromWatchlist,
-}) => {
-  const [trailerUrl, setTrailerUrl] = useState("");
-  const [showPlayer, setShowPlayer] = useState(false);
-
-  const fetchTrailer = async (movieId) => {
-    const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-    try {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${API_KEY}`
-      );
-      const data = await res.json();
-      const trailer = data.results.find(
-        (vid) => vid.type === "Trailer" && vid.site === "YouTube"
-      );
-      if (trailer) {
-        setTrailerUrl(`https://www.youtube.com/watch?v=${trailer.key}`);
-        setShowPlayer(true);
-      } else {
-        alert("Trailer not available");
-      }
-    } catch (error) {
-      console.error("Error fetching trailer:", error);
-      alert("Error fetching trailer");
-    }
-  };
-
+const MovieList = ({ movies, onAddToWatchlist, onRemoveFromWatchlist, watchlist = [], onPlayTrailer }) => {
   return (
-    <>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {movies.map((movie) => (
-          <div key={movie.id} className="bg-white rounded shadow p-2 flex flex-col">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {movies.map((movie) => {
+        const posterUrl = movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : "https://via.placeholder.com/500x750?text=No+Image";
+
+        const isInWatchlist = watchlist.some((m) => m.id === movie.id);
+
+        return (
+          <div
+            key={movie.id}
+            className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 relative group"
+          >
             <img
-              src={`${IMAGE_BASE_URL}${movie.poster_path}`}
+              src={posterUrl}
               alt={movie.title}
-              className="rounded mb-2"
+              className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            <h3 className="text-lg font-semibold">{movie.title}</h3>
-            <p className="text-sm text-gray-600 mb-2">Rating: {movie.vote_average}</p>
-            <button
-              onClick={() => fetchTrailer(movie.id)}
-              className="bg-red-600 text-white px-2 py-1 rounded mb-2"
-            >
-              Watch Trailer
-            </button>
-
-            {onAddToWatchlist && (
-              <button
-                onClick={() => onAddToWatchlist(movie)}
-                className="bg-green-600 text-white px-2 py-1 rounded"
-              >
-                + Add to Watchlist
-              </button>
-            )}
-
-            {onRemoveFromWatchlist && (
-              <button
-                onClick={() => onRemoveFromWatchlist(movie.id)}
-                className="bg-yellow-600 text-black px-2 py-1 rounded"
-              >
-                Remove from Watchlist
-              </button>
-            )}
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-2 line-clamp-1">
+                {movie.title}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mb-3 line-clamp-2">
+                {movie.overview || "No description available."}
+              </p>
+              <div className="flex justify-between items-center text-sm mb-2">
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                  ⭐ {movie.vote_average || "N/A"}
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  📅 {movie.release_date?.split("-")[0] || "N/A"}
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {isInWatchlist ? (
+                  <button
+                    onClick={() => onRemoveFromWatchlist(movie.id)}
+                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded-full transition"
+                  >
+                    ❌ Remove
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onAddToWatchlist(movie)}
+                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded-full transition"
+                  >
+                    ➕ Add
+                  </button>
+                )}
+                <button
+                  onClick={() => onPlayTrailer(movie)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-1 rounded-full transition"
+                >
+                  ▶️ Trailer
+                </button>
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {showPlayer && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-          <div className="bg-black p-4 rounded-lg max-w-3xl w-full relative">
-            <button
-              onClick={() => setShowPlayer(false)}
-              className="absolute top-2 right-2 text-white text-xl font-bold"
-            >
-              &times;
-            </button>
-            <ReactPlayer url={trailerUrl} controls width="100%" />
-          </div>
-        </div>
-      )}
-    </>
+        );
+      })}
+    </div>
   );
 };
 
